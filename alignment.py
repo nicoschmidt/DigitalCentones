@@ -1,26 +1,16 @@
+#!usr/bin/python
 '''
 Created on Nov 14, 2018
 
 @author: Nico Schmidt
 '''
 import codecs
-import numpy as np
-
-import heapq
 import xml.etree.ElementTree as ET
-import re
 import unicodedata
-from DigitalCentones.smith_waterman import SmithWaterman
+import numpy as np
+import heapq
+import re
 import pickle
-
-
-######################################
-## THE XML FILES WE WANT TO ANALIZE ##
-######################################
-chrpat_xml = 'tlg2022.tlg003.opp-grc1.xml'
-medea_txt = 'medea.txt' # The Medea text we only have as plain text, not as T’EI-XML !
-
-
 
 
 #####################################
@@ -209,6 +199,8 @@ def load_xml(fname):
         i+=1
     return lines
 
+
+
 def load_plain_text(fname, text_id, title='', author=''):
     '''
     Read texts from plain text file.
@@ -228,32 +220,6 @@ def load_plain_text(fname, text_id, title='', author=''):
     lines = Work(text_id, title, author, lines)
     return lines
 
-lines_chr_pat = load_xml(chrpat_xml)
-for i in range(30):
-    lines_chr_pat[i].no = -30+i # hack to re-number preface lines
-for i in range(30, len(lines_chr_pat)):
-    lines_chr_pat[i].no = -29+i # hack to re-number lines
-lines_medea = load_plain_text(medea_txt, 'Medea', 'Medea', 'Euripides')
-
-
-# print all characters in the corpus:
-alphabet = np.unique([c for lines in [lines_chr_pat, lines_medea] for line in lines for c in line.text])
-for a in alphabet:
-    print('{} "{}" {}'.format(hex(ord(a)), a, unicodedata.name(a, 'not defined')))
-alphabet_no_diacritics = np.unique([c for lines in [lines_chr_pat, lines_medea] for line in lines for c in line.text_no_diacritics])
-for a in alphabet_no_diacritics:
-    print('{} "{}" {}'.format(hex(ord(a)), a, unicodedata.name(a, 'not defined')))
-
-# # find latin letter a
-# for lines in [lines_chr_pat, lines_medea]:
-#     for line in lines:
-#         if "a" in line.text_no_diacritics:
-#             print('a found in {}, line {}: "{}" ("{}")'.format(lines.work_id, line.idx, line.text_raw, line.text))
-# 
-# for k in morph_dict:
-#     if isinstance(k, str):
-#         if 'νακτος' in k:
-#             print(k)
 
 
 def load_line_to_line_map(fname_line_to_line_map):
@@ -282,9 +248,6 @@ def load_line_to_line_map(fname_line_to_line_map):
                          'Ilias',
                          'Alexandra']
     return dict([(target_line_no,(source_work_names[source_work_id-1], source_line_id)) for target_line_no,source_work_id, source_line_id in line_to_line_map])
-
-fname_line_to_line_map = 'Christos.paschon.1.2a.csv'
-line_to_line_map = load_line_to_line_map(fname_line_to_line_map)
 
 
 
@@ -344,11 +307,16 @@ def find_line_to_line_alignments(target_lines, source_lines_dict, alignment_func
     return alignments
 
 
+
 def save_alignments(alignments, alignments_outfile):
     pickle.dump(alignments, open(alignments_outfile, 'wb'))
 
+
+
 def load_alignment(alignments_outfile):
     return pickle.load(open(alignments_outfile, 'rb'))
+
+
 
 def save_alignments_csv(alignments, target_lines, source_lines_dict, alignments_outfile, line_form_func=lambda line:line.text, min_score=0):
     '''
@@ -399,6 +367,7 @@ def save_alignments_csv(alignments, target_lines, source_lines_dict, alignments_
                 else:
                     fid.write(u';;;;;;;;;')        
             fid.write(u'\n')
+
 
 
 def save_alignments_html(alignments, target_lines, source_lines_dict, alignments_outfile, line_form_func=lambda line:line.text, min_score=0):
@@ -469,95 +438,12 @@ def save_alignments_html(alignments, target_lines, source_lines_dict, alignments
                 fid.write(u'<td></td><td></td><td></td><td></td>')
             fid.write(u'</tr>\n')
         fid.write(u'</table>\n</body>\n</html>\n')
-    
-
-
-#####################################################################
-## Character-based line-to-line alignments on text with diacritics ##
-#####################################################################
-string_mapping_function = lambda s:s # identity
-smith_waterman = SmithWaterman(match_score=5,
-                               mismatch_score=-1,
-                               gap_score=-1,
-                               n_max_alignments=1,
-                               min_score_treshold=0,
-                               string_mapping_function=string_mapping_function)
-line_form_func = lambda line:line.text
-alignments_outfile = 'alignments_character-based_with_diacritics'
-target_lines = lines_chr_pat
-source_lines_dict = {lines_medea[0].work_id:lines_medea}
-alignments = find_line_to_line_alignments(target_lines, source_lines_dict, smith_waterman.align, 3, line_form_func)
-save_alignments(alignments, alignments_outfile)
-save_alignments_csv(alignments, target_lines, source_lines_dict, alignments_outfile, line_form_func)
-save_alignments_html(alignments, target_lines, source_lines_dict, alignments_outfile, line_form_func)
-
-
-########################################################################
-## Character-based line-to-line alignments on text without diacritics ##
-########################################################################
-smith_waterman = SmithWaterman(match_score=4,
-                               mismatch_score=-1,
-                               gap_score=-1,
-                               n_max_alignments=1,
-                               min_score_treshold=0)
-line_form_func = lambda line:line.text_no_diacritics
-alignments_outfile = 'alignments_character-based_without_diacritics'
-target_lines = lines_chr_pat
-source_lines_dict = {lines_medea[0].work_id:lines_medea}
-alignments = find_line_to_line_alignments(target_lines, source_lines_dict, smith_waterman.align, 3, line_form_func)
-save_alignments(alignments, alignments_outfile)
-save_alignments_csv(alignments, target_lines, source_lines_dict, alignments_outfile, line_form_func)
-save_alignments_html(alignments, target_lines, source_lines_dict, alignments_outfile, line_form_func, 4)
-
-
-
-###################################################################
-## word-based line-to-line alignments on text without diacritics ##
-###################################################################
-smith_waterman = SmithWaterman(match_score=2,
-                               mismatch_score=-1,
-                               gap_score=-1,
-                               n_max_alignments=1,
-                               min_score_treshold=0)
-line_form_func = lambda line:line.text_no_diacritics.split(' ')
-alignments_outfile = 'alignments_word-based_without_diacritics'
-target_lines = lines_chr_pat
-source_lines_dict = {lines_medea[0].work_id:lines_medea}
-alignments = find_line_to_line_alignments(target_lines, source_lines_dict, smith_waterman.align, 3, line_form_func)
-save_alignments(alignments, alignments_outfile)
-save_alignments_csv(alignments, target_lines, source_lines_dict, alignments_outfile, line_form_func)
-save_alignments_html(alignments, target_lines, source_lines_dict, alignments_outfile, lambda line:line.text_raw.split(' '), 4)
-
-
-#####################################################################
-## word-based line-to-line alignments on Toullier's alignment data ##
-#####################################################################
-smith_waterman = SmithWaterman(match_score=2,
-                               mismatch_score=-1,
-                               gap_score=-1,
-                               n_max_alignments=1,
-                               min_score_treshold=0)
-line_form_func = lambda line:line.text_no_diacritics.split(' ')
-alignments_outfile = 'alignments_word-based_Toullier'
-target_lines = lines_chr_pat
-source_lines_dict = {lines_medea[0].work_id:lines_medea}
-alignments = find_line_to_line_alignments(target_lines, source_lines_dict, smith_waterman.align, 3, line_form_func, line_to_line_map)
-save_alignments(alignments, alignments_outfile)
-save_alignments_csv(alignments, target_lines, source_lines_dict, alignments_outfile, line_form_func)
-save_alignments_html(alignments, target_lines, source_lines_dict, alignments_outfile, lambda line:line.text_raw.split(' '), 4)
-
-
 
 
 
 ###########################
 ## LOAD MORPOLOGICAL MAP ##
 ###########################
-# morphology files from https://github.com/gcelano/MorpheusGreekUnicode
-morph_xml_fnames = ['MorpheusGreekUnicode/MorpheusGreek1-319492.xml',
-                    'MorpheusGreekUnicode/MorpheusGreek319493-638984.xml',
-                    'MorpheusGreekUnicode/MorpheusGreek638985-958476.xml']
-
 def load_morphology(morph_xml_fnames, with_diacritics=True):
     '''
     Load the morphology information from xml files and create a dictionary to map word forms to their lemmas.
@@ -610,17 +496,7 @@ def load_morphology(morph_xml_fnames, with_diacritics=True):
                 morph_dict[_id] = (lemma, [form])
     
     return morph_dict, max_id
-morph_dict, max_id = load_morphology(morph_xml_fnames, False)
 
-# print all characters in the corpus, including the morphology data base:
-alphabet_morphology = np.array([], dtype='<U1')
-for word in morph_dict.keys():
-    if type(word) is str:
-        alphabet_morphology = np.unique(np.hstack([alphabet_morphology, np.unique(list(word))]))
-for a in alphabet_morphology:
-    print('{} "{}" {}'.format(hex(ord(a)), a, unicodedata.name(a, 'not defined')))
-for a in np.unique(np.hstack([alphabet_no_diacritics, alphabet_morphology])):
-    print('{} "{}" {} {} {}'.format(hex(ord(a)), a, a in alphabet_no_diacritics, a in alphabet_morphology, unicodedata.name(a, 'not defined')))
 
 
 def add_lemma_ids(lines, morph_dict, max_id, with_diacritics=True):
@@ -646,200 +522,7 @@ def add_lemma_ids(lines, morph_dict, max_id, with_diacritics=True):
         line.lemma_ids = lemma_ids
         line.text_lemma = text_lemma[:-1]        
     return max_id # note: other than lists and dictionaries, integers are immutable so it isn changes outside the function, thus return it
-max_id = add_lemma_ids(lines_chr_pat, morph_dict, max_id)
-max_id = add_lemma_ids(lines_medea, morph_dict, max_id)
-# many words (~1000) not found in morpheus!!!
 
-
-
-##########################################
-## Line-to-line alignments on lemma ids ##
-##########################################
-string_mapping_function = lambda _id:morph_dict[_id][0]+' '
-smith_waterman = SmithWaterman(match_score=4,
-                               mismatch_score=-1,
-                               gap_score=-1,
-                               n_max_alignments=1,
-                               min_score_treshold=5,
-                               string_mapping_function=string_mapping_function)
-line_form_func = lambda line:line.lemma_ids
-alignments_outfile = 'alignments_lemma-based.csv'
-target_lines = lines_chr_pat
-source_lines_dict = {lines_medea[0].work_id:lines_medea}
-alignments = find_line_to_line_alignments(target_lines, source_lines_dict, smith_waterman.align, 3, line_form_func)
-save_alignments(alignments_outfile)
-save_alignments_csv(alignments, target_lines, source_lines_dict, alignments_outfile, line_form_func)
-save_alignments_html(alignments, target_lines, source_lines_dict, alignments_outfile, line_form_func)
-
-
-
-
-
-#################################################
-## FIND WORD-BASED ALIGNMENTS USING MORPHOLOGY ##
-#################################################
-n_cp = len(lines_chr_pat)
-k=3
-min_score=2
-match = 4
-mismatch=-1
-gap=-1
-works = {lines_medea[0][0]:lines_medea}
-#          ,lines_bac[0][0]:lines_bac}
-alignments_outfile = 'alignments_morph.csv'
-v_i = 6 # position of verse in lines_XX (this IDs in this case)
-alignments = []
-print('searching all verses for alignments...')
-for i,v_cp in enumerate(lines_chr_pat):
-    if i%10==0:
-        print('{0}/{1} ({2:3.0f}%)'.format(i,n_cp, i/float(n_cp)*100))
-    alignments_i = []
-    for _id, verses in works.items():
-        for j,v in enumerate(verses):
-            a = align(v[v_i], v_cp[v_i], match, mismatch, gap, 1, min_score, False, False, lambda _id:morph_dict[_id][0]+' ')
-            if a:
-                heapq.heappush(alignments_i, (-a[0][0],_id)+a[0][1:]+(v[1],)) # negative score to sort descending order
-    alignments_i = [(-a[0],)+a[1:] for a in alignments_i] # make score positive again
-    alignments.append(alignments_i[:k])
-
-with codecs.open(alignments_outfile, 'w', encoding='utf-8') as fid:
-    fid.write(u'Vers-ID. CP;Versnr. CP; Sprecher; Vers CP')
-    for _ in range(k): fid.write(u';Werk;Vers-ID Werk; Vers Werk; Alignment; Score; Start CP; End CP; Start Werk; End Werk')
-    fid.write(u'\n')
-    for i,(v_cp,al) in enumerate(zip(lines_chr_pat,alignments)):
-        fid.write(u'{0};{1};"{2}";"{3}"'.format(v_cp[1],v_cp[2],('' if v_cp[3] is None else v_cp[3]),v_cp[4]))
-        for j in range(k):
-            if j<len(al):
-                fid.write(u';"{0}";{1};"{2}";"{3}";{4:.0f};{5};{6};{7};{8}'.format(al[j][1],
-                                                                                   al[j][5]+1,
-                                                                                   works[al[j][1]][al[j][5]][4],
-                                                                                   al[j][3],
-                                                                                   al[j][0],
-                                                                                   al[j][2][0][1]+1,
-                                                                                   al[j][2][-1][1]+1,
-                                                                                   al[j][2][0][0]+1,
-                                                                                   al[j][2][-1][0]+1,))
-            else:
-                fid.write(u';;;;;;;;;')        
-        fid.write(u'\n')
-
-
-
-####################################
-## FIND ALIGNMENTS FOR EACH VERSE ##
-####################################
-n_cp = len(lines_chr_pat)
-alignments = []
-k=3
-min_score=14
-match = 2
-mismatch=-1
-gap=-2
-works = {lines_medea[0][0]:lines_medea}
-
-print('searching all verses for alignments...')
-for i,v_cp in enumerate(lines_chr_pat):
-    if i%10==0:
-        print('{0}/{1} ({2:3.0f}%)'.format(i,n_cp, i/float(n_cp)*100))
-    alignments_i = []
-    for _id, verses in works.iteritems():
-        for j,v in enumerate(verses):
-            a = align(v[4], v_cp[4], match, mismatch, gap, 1, min_score, False, False)
-            if a:
-                heapq.heappush(alignments_i, (-a[0][0],_id)+a[0][1:]+(v[1],)) # negative score to sort descending order
-    alignments_i = [(-a[0],)+a[1:] for a in alignments_i] # make score positive again
-    alignments.append(alignments_i[:k])
-
-with codecs.open('alignments.csv', 'w', encoding='utf-8') as fid:
-    fid.write(u'Vers-ID. CP;Versnr. CP; Sprecher; Vers CP')
-    for _ in range(k): fid.write(u';Werk;Vers-ID Werk; Vers Werk; Alignment; Score; Start CP; End CP; Start Werk; End Werk')
-    fid.write(u'\n')
-    for i,(v_cp,al) in enumerate(zip(lines_chr_pat,alignments)):
-        fid.write(u'{0};{1};"{2}";"{3}"'.format(v_cp[1],v_cp[2],('' if v_cp[3] is None else v_cp[3]),v_cp[4]))
-        for j in range(k):
-            if j<len(al):
-                fid.write(u';"{0}";{1};"{2}";"{3}";{4:.0f};{5};{6};{7};{8}'.format(al[j][1],
-                                                                                   al[j][5]+1,
-                                                                                   works[al[j][1]][al[j][5]][4],
-                                                                                   al[j][3],
-                                                                                   al[j][0],
-                                                                                   al[j][2][0][1]+1,
-                                                                                   al[j][2][-1][1]+1,
-                                                                                   al[j][2][0][0]+1,
-                                                                                   al[j][2][-1][0]+1,))
-            else:
-                fid.write(u';;;;;;;;;')        
-        fid.write(u'\n')
-
-
-
-
-###########################################
-## FIND ALIGNMENTS FOR GIVEN VERSE PAIRS ##
-###########################################
-fname_verse_map = 'Christos.paschon.1.2a.csv'
-verse_map = np.loadtxt(fname_verse_map, int, delimiter='\t', skiprows=1, usecols=[0,1,2])
-quellen_namen = ['Agamemnon',
-                 'Prometheus',
-                 'Alkestis',
-                 'Andromache',
-                 'Bakchen',
-                 'Hekabe',
-                 'Helena',
-                 'Hippolytos',
-                 'Iphigenie in Aulis',
-                 'Iphigenie in Tauris',
-                 'Medea',
-                 'Orestes',
-                 'Ph\"onikerinnen',
-                 'Rhesos',
-                 'Troerinnen',
-                 'Ilias',
-                 'Alexandra']
-# make map dict
-# for 
-n_cp = len(lines_chr_pat)
-alignments = []
-k=3
-min_score=14
-match = 2
-mismatch=-1
-gap=-2
-works = {lines_medea[0][0]:lines_medea}
-
-print('searching all verses for alignments...')
-for i,v_cp in enumerate(lines_chr_pat):
-    if i%10==0:
-        print('{0}/{1} ({2:3.0f}%)'.format(i,n_cp, i/float(n_cp)*100))
-    alignments_i = []
-    for _id, verses in works.iteritems():
-        for j,v in enumerate(verses):
-            a = align(v[4], v_cp[4], match, mismatch, gap, 1, min_score, False, False)
-            if a:
-                heapq.heappush(alignments_i, (-a[0][0],_id)+a[0][1:]+(v[1],)) # negative score to sort descending order
-    alignments_i = [(-a[0],)+a[1:] for a in alignments_i] # make score positive again
-    alignments.append(alignments_i[:k])
-
-with codecs.open('alignments.csv', 'w', encoding='utf-8') as fid:
-    fid.write(u'Vers-ID. CP;Versnr. CP; Sprecher; Vers CP')
-    for _ in range(k): fid.write(u';Werk;Vers-ID Werk; Vers Werk; Alignment; Score; Start CP; End CP; Start Werk; End Werk')
-    fid.write(u'\n')
-    for i,(v_cp,al) in enumerate(zip(lines_chr_pat,alignments)):
-        fid.write(u'{0};{1};"{2}";"{3}"'.format(v_cp[1],v_cp[2],('' if v_cp[3] is None else v_cp[3]),v_cp[4]))
-        for j in range(k):
-            if j<len(al):
-                fid.write(u';"{0}";{1};"{2}";"{3}";{4:.0f};{5};{6};{7};{8}'.format(al[j][1],
-                                                                                   al[j][5]+1,
-                                                                                   works[al[j][1]][al[j][5]][4],
-                                                                                   al[j][3],
-                                                                                   al[j][0],
-                                                                                   al[j][2][0][1]+1,
-                                                                                   al[j][2][-1][1]+1,
-                                                                                   al[j][2][0][0]+1,
-                                                                                   al[j][2][-1][0]+1,))
-            else:
-                fid.write(u';;;;;;;;;')        
-        fid.write(u'\n')
 
 
 
