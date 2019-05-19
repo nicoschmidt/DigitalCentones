@@ -10,7 +10,7 @@ import heapq
 import xml.etree.ElementTree as ET
 import re
 import unicodedata
-from smith_waterman import SmithWaterman
+from DigitalCentones.smith_waterman import SmithWaterman
 import pickle
 
 
