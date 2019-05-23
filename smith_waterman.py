@@ -27,15 +27,13 @@ class SmithWaterman(object):
                  mismatch_score=-1,
                  gap_score=-1,
                  n_max_alignments=5,
-                 min_score_treshold=10,
-                 string_mapping_function=identity):
+                 min_score_treshold=10):
         
         self.match_score = match_score
         self.mismatch_score = mismatch_score
         self.gap_score = gap_score
         self.n_max_alignments = n_max_alignments
         self.min_score_treshold = min_score_treshold
-        self.string_mapping_function = string_mapping_function
         
         self.score_matrix = np.empty((0,0))
         self.max_score = []
@@ -60,12 +58,12 @@ class SmithWaterman(object):
             
             # Traceback. Find the optimal path through the scoring matrix. This path
             # corresponds to the optimal local sequence alignment.
-            alignment, seq1_aligned, seq2_aligned, valid = self.traceback(start_pos, seq1, seq2)
+            alignment, valid = self.traceback(start_pos, seq1, seq2)
             if not valid:
                 continue
             
             n_matches += 1
-            alignments.append((score, alignment, seq1_aligned, seq2_aligned))
+            alignments.append((score, alignment))
         
         return alignments
 
@@ -151,40 +149,30 @@ class SmithWaterman(object):
             return move, scores[move]
     
         DIAG, UP, LEFT = range(3)
-        aligned_seq1 = []
-        aligned_seq2 = []
         alignment = []
         i, j = start_pos
         move, score = next_move(i,j)
         while score != 0:
             if (i,j) in self.visited_pos:
-                return [], '', '', self.visited_pos, False
+                return [], False # ignore positions that have already been visited
             self.visited_pos.append((i,j))
             if move == DIAG:
                 alignment.append((i-1, j-1))
-                aligned_seq1.append(self.string_mapping_function(seq1[i - 1][0] if isinstance(seq1[i - 1], list) else seq1[i - 1]))
-                aligned_seq2.append(self.string_mapping_function(seq2[j - 1][0] if isinstance(seq2[j - 1], list) else seq2[j - 1]))
                 i -= 1
                 j -= 1
             elif move == UP:
                 alignment.append((i-1, j))
-                aligned_seq1.append(self.string_mapping_function(seq1[i - 1][0] if isinstance(seq1[i - 1], list) else seq1[i - 1]))
-                aligned_seq2.append('-')
                 i -= 1
             else: # LEFT
                 alignment.append((i, j-1))
-                aligned_seq1.append('-')
-                aligned_seq2.append(self.string_mapping_function(seq2[j - 1][0] if isinstance(seq2[j - 1], list) else seq2[j - 1]))
                 j -= 1
     
             move, score = next_move(i, j)
     
         alignment.append((i-1, j-1))
-        aligned_seq1.append(self.string_mapping_function(seq1[i - 1][0] if isinstance(seq1[i - 1], list) else seq1[i - 1]))
-        aligned_seq2.append(self.string_mapping_function(seq2[j - 1][0] if isinstance(seq2[j - 1], list) else seq2[j - 1]))
         
         alignment.reverse()
-        return alignment, ''.join(reversed(aligned_seq1)), ''.join(reversed(aligned_seq2)), True # last True output indicates this alignment is valid, i.e. this position has not been visited yet
+        return alignment, True # last True output indicates this alignment is valid, i.e. this position has not been visited yet
 
 
 

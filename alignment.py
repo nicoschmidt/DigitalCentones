@@ -129,17 +129,13 @@ class Alignment(object):
     target_line_idx:        the index of the line in the target text
     alignment:              the alignment info as list of indexes (i,j) defining which symbols of the lines are aligned
                             i is the index of the symbol in the source line, j is the index of the symbol in the target line
-    aligned_target_sequece: the aligned target sequence
-    aligned_source_sequece: the aligned source sequence
     '''
-    def __init__(self, score, source_text_id, source_line_idx, target_line_idx, alignment, aligned_target_sequence, aligned_source_sequence):
+    def __init__(self, score, source_text_id, source_line_idx, target_line_idx, alignment):
         self.score = score
         self.source_text_id = source_text_id
         self.source_line_idx = source_line_idx
         self.target_line_idx = target_line_idx
         self.alignment = alignment
-        self.aligned_target_sequence = aligned_target_sequence
-        self.aligned_source_sequence = aligned_source_sequence
     
     # for heapsort to work with this class we need to implement ordering functions:
     def __eq__(self, other):
@@ -279,8 +275,8 @@ def find_line_to_line_alignments(target_lines, source_lines_dict, alignment_func
                     
                     # store best alignment result if found
                     if alignments_ij:
-                        (score, alignment, aligned_source_sequece, aligned_target_sequece) = alignments_ij[0] # get first (best) alignment
-                        a = Alignment(score, source_id, source_line.idx, target_line.idx, alignment, aligned_target_sequece, aligned_source_sequece)
+                        (score, alignment) = alignments_ij[0] # get first (best) alignment
+                        a = Alignment(score, source_id, source_line.idx, target_line.idx, alignment)
                         
                         # store it as tuple (score, alignment_object)
                         heapq.heappush(alignments_i, a)
@@ -301,8 +297,8 @@ def find_line_to_line_alignments(target_lines, source_lines_dict, alignment_func
                         source_line = source_line[0]
                         alignments_ij = alignment_function(line_form_func(source_line), line_form_func(target_line))
                         if alignments_ij:
-                            (score, alignment, aligned_source_sequece, aligned_target_sequece) = alignments_ij[0] # get first (best) alignment
-                            alignments_i.append(Alignment(score, source_id, source_line.idx, target_line.idx, alignment, aligned_target_sequece, aligned_source_sequece))
+                            (score, alignment) = alignments_ij[0] # get first (best) alignment
+                            alignments_i.append(Alignment(score, source_id, source_line.idx, target_line.idx, alignment))
             alignments.append(alignments_i)
     return alignments
 
@@ -335,7 +331,6 @@ def save_alignments_csv(alignments, target_lines, source_lines_dict, alignments_
             fid.write(u';Source Work')
             fid.write(u';Source Line ID')
             fid.write(u';Source Line Text')
-            fid.write(u';Alignment Text')
             fid.write(u';Alignment Score')
             fid.write(u';Alignment Target Start idx')
             fid.write(u';Alignment Target End idx')
@@ -358,7 +353,6 @@ def save_alignments_csv(alignments, target_lines, source_lines_dict, alignments_
                     fid.write(u';"{}"'.format(alignment.source_text_id))
                     fid.write(u';{}'.format(alignment.source_line_idx))
                     fid.write(u';"{}"'.format(text))
-                    fid.write(u';"{}"'.format(alignment.aligned_target_sequence))
                     fid.write(u';{0:.0f}'.format(alignment.score))
                     fid.write(u';{}'.format(alignment.alignment[0][1]))
                     fid.write(u';{}'.format(alignment.alignment[-1][1]))
