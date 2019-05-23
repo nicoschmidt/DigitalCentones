@@ -226,10 +226,10 @@ def load_line_to_line_map(fname_line_to_line_map):
     '''
     load mapping of target lines to source work and source line.
     Input file needs to be a text file with one header row and remaining rows structured as
-    '<source_work_number>\t<source_work_line_number>\t<target_line_number>...\n'
+    '<target_line_number>,<source_work_number>,<source_work_line_number>...\n'
     output map is a dictionary with target_line_number as keys and tuples (<source_work_id>, <source_work_number>) as values
     '''
-    line_to_line_map = np.loadtxt(fname_line_to_line_map, int, delimiter='\t', skiprows=1, usecols=[2,0,1])
+    line_to_line_map = np.loadtxt(fname_line_to_line_map, int, delimiter=',', skiprows=1, usecols=[0,1,2])
     source_work_names = ['Agamemnon',
                          'Prometheus',
                          'Alkestis',
