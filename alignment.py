@@ -506,7 +506,6 @@ def add_lemma_ids(lines, morph_dict, max_id, with_diacritics=True):
             text = line.text_no_diacritics
         for word in text.split(None):
             if word not in morph_dict: # add missing word to dict
-                print(word)
                 max_id += 1
                 morph_dict[word] = [max_id]
                 morph_dict[max_id] = (word, [word])
